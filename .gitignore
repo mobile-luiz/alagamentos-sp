@@ -1,4 +1,5 @@
 node_modules/
+servidor/dados/
 tiles-cache/
 geocache.json
 ultima-pagina-cge.html

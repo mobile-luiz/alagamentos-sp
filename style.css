@@ -7,13 +7,15 @@
   --agua: #8FC1D4;
   --linha: #D3DCE1;
   --nivel: #7A8A94;
+  --esqueleto: #E2E8EC;
   color-scheme: light;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* Tema escuro: automático (sistema) ou escolhido no botão */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="claro"]) {
     --fundo: #141B21;
     --superficie: #1C252D;
     --texto: #E4EAEE;
@@ -21,14 +23,23 @@
     --chuva: #7DB6D1;
     --agua: #3E6E85;
     --linha: #2C3A44;
+    --esqueleto: #26323B;
     color-scheme: dark;
   }
 }
-
-@media (prefers-color-scheme: dark) {
-  /* Deixa o mapa claro do OpenStreetMap escuro, combinando com o tema */
-  .leaflet-container { background: #1C252D; }
+:root[data-tema="escuro"] {
+  --fundo: #141B21;
+  --superficie: #1C252D;
+  --texto: #E4EAEE;
+  --texto-suave: #97A5AF;
+  --chuva: #7DB6D1;
+  --agua: #3E6E85;
+  --linha: #2C3A44;
+  --esqueleto: #26323B;
+  color-scheme: dark;
 }
+
+.leaflet-container { background: var(--fundo); }
 
 *, *::before, *::after { box-sizing: inherit; }
 
@@ -49,7 +60,7 @@ h1, h2, h3, .placa-nivel {
   margin: 0;
 }
 
-button, input { font: inherit; }
+button, input, select { font: inherit; }
 
 :focus-visible { outline: 3px solid var(--chuva); outline-offset: 2px; }
 
@@ -86,6 +97,27 @@ button, input { font: inherit; }
 .placa[data-nivel="2"] { color: #1F2A33; box-shadow: 0 0 0 3px var(--cor), inset 0 0 0 3px #1F2A33; }
 .placa-nivel { font-size: 2.1rem; font-weight: 800; line-height: 1; }
 .placa-onde { font-size: .88rem; font-weight: 600; margin-top: .2rem; }
+
+.topo-acoes { display: flex; align-items: center; gap: .6rem; }
+.botao-topo {
+  min-height: 40px;
+  padding: 0 .9rem;
+  background: var(--fundo);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.botao-topo.icone { width: 40px; padding: 0; display: grid; place-items: center; }
+.botao-topo[hidden] { display: none; }
+
+.placa.mudou { animation: placa-muda .6s ease-out; }
+@keyframes placa-muda {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
 
 /* ---------- Layout ---------- */
 .layout {
@@ -171,6 +203,38 @@ button, input { font: inherit; }
 .opcoes-fundo button[aria-pressed="true"] { background: var(--chuva); color: var(--superficie); border-color: var(--chuva); font-weight: 600; }
 .opcao-camada { display: flex; align-items: center; gap: .55rem; min-height: 38px; cursor: pointer; }
 .opcao-camada input { width: 18px; height: 18px; accent-color: var(--chuva); }
+
+/* ---------- Radar ---------- */
+.radar {
+  position: absolute;
+  left: 50%;
+  bottom: 1.9rem;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: min(26rem, calc(100% - 1.5rem));
+  padding: .35rem .75rem .35rem .35rem;
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.radar[hidden] { display: none; }
+.radar-play {
+  flex: none;
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--chuva);
+  color: var(--superficie);
+  cursor: pointer;
+}
+.radar input[type="range"] { flex: 1; min-width: 0; accent-color: var(--chuva); }
+.radar-hora { flex: none; font-weight: 600; font-size: .85rem; font-variant-numeric: tabular-nums; }
 
 /* ---------- Painel ---------- */
 .painel {
@@ -275,18 +339,158 @@ button, input { font: inherit; }
 .aviso a { color: var(--chuva); font-weight: 600; }
 .emergencia { margin-top: .8rem !important; color: var(--texto); font-weight: 600; }
 
+/* ---------- Avisos ---------- */
+.avisos {
+  margin: .25rem 0 1.5rem;
+  padding: .9rem 1rem 1rem;
+  background: var(--fundo);
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+}
+.avisos h3 { font-size: 1.15rem; }
+.avisos .legenda-curta { margin: .2rem 0 .7rem; }
+.avisos-linha { display: flex; gap: .5rem; flex-wrap: wrap; }
+.avisos select {
+  flex: 1;
+  min-width: 9rem;
+  min-height: 40px;
+  padding: 0 .6rem;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+}
+.botao-principal {
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--chuva);
+  color: var(--superficie);
+  font-weight: 600;
+  cursor: pointer;
+}
+.botao-principal[data-ativo="true"] { background: transparent; color: var(--texto); border: 1px solid var(--linha); }
+.botao-principal:disabled { opacity: .5; cursor: not-allowed; }
+#btnAvisosTeste { margin-top: .5rem; }
+
+/* ---------- Histórico ---------- */
+.periodo {
+  display: inline-flex;
+  margin: .5rem 0 .4rem;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.periodo button {
+  min-height: 36px;
+  padding: 0 .85rem;
+  border: 0;
+  background: var(--superficie);
+  color: var(--texto);
+  cursor: pointer;
+}
+.periodo button + button { border-left: 1px solid var(--linha); }
+.periodo button[aria-pressed="true"] { background: var(--chuva); color: var(--superficie); font-weight: 600; }
+
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: .5rem 0 1rem;
+  border-top: 1px solid var(--linha);
+  border-bottom: 1px solid var(--linha);
+}
+.numeros div { padding: .6rem 0; }
+.numeros div + div { padding-left: .75rem; border-left: 1px solid var(--linha); }
+.numeros dt { font-size: .78rem; color: var(--texto-suave); line-height: 1.2; }
+.numeros dd {
+  margin: .15rem 0 0;
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.subtitulo { font-size: 1.05rem; margin: .9rem 0 .35rem; }
+.grafico { position: relative; padding-top: 1rem; }
+.grafico svg { display: block; width: 100%; height: 6rem; }
+.grafico rect { fill: var(--chuva); }
+.grafico rect:hover { fill: var(--texto); }
+.grafico-rotulos { display: flex; margin-top: .25rem; }
+.grafico-rotulos span {
+  flex: 1;
+  min-width: 0;
+  font-size: .72rem;
+  color: var(--texto-suave);
+  text-align: center;
+  white-space: nowrap;
+  overflow: visible;
+}
+.grafico-max { position: absolute; top: -.2rem; right: 0; font-size: .72rem; color: var(--texto-suave); }
+
+.ranking { list-style: none; margin: 0 0 1.5rem; padding: 0; counter-reset: pos; }
+.ranking li {
+  position: relative;
+  padding: .6rem 0 .6rem 1.9rem;
+  border-bottom: 1px solid var(--linha);
+  counter-increment: pos;
+  cursor: pointer;
+}
+.ranking li.vazio { padding-left: 0; cursor: default; }
+.ranking li:not(.vazio)::before {
+  content: counter(pos);
+  position: absolute;
+  left: 0; top: .55rem;
+  width: 1.4rem;
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  font-weight: 700;
+  color: var(--texto-suave);
+  text-align: right;
+}
+.ranking-topo { display: flex; justify-content: space-between; gap: .5rem; }
+.ranking-vezes { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ranking-barra { display: block; height: 4px; margin: .3rem 0; border-radius: 2px; background: var(--chuva); }
+.ranking small { display: block; color: var(--texto-suave); font-size: .82rem; }
+
+/* ---------- Carregando (esqueleto) ---------- */
+.esqueleto, .esqueleto-linha {
+  background: linear-gradient(90deg, var(--esqueleto) 25%, var(--linha) 50%, var(--esqueleto) 75%);
+  background-size: 300% 100%;
+  animation: brilho 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+.esqueleto { list-style: none; height: 3.4rem; margin: .5rem 0; }
+.esqueleto-linha { display: inline-block; width: 14rem; max-width: 80%; height: .8em; vertical-align: middle; }
+@keyframes brilho { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
 /* ---------- Marcadores do mapa ---------- */
+.marcador-cge {
+  position: relative;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--cor);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.35);
+}
+.marcador-cge:not(.ativo) { opacity: .45; }
+/* Ruas alagadas agora: anel pulsando */
+.marcador-cge.ativo::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 3px solid var(--cor);
+  animation: pulso 1.8s ease-out infinite;
+}
+@keyframes pulso {
+  0% { transform: scale(1); opacity: .9; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
 .marcador-historico {
   width: 14px; height: 14px;
   background: var(--superficie);
   border: 3px solid #E2B400;
   transform: rotate(45deg);
-}
-.marcador-cge {
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.35);
 }
 .selo {
   display: inline-block;
@@ -295,6 +499,7 @@ button, input { font: inherit; }
   margin-right: .4rem;
 }
 .registro.encerrado { opacity: .6; }
+.secao + .secao { margin-top: .5rem; }
 .leaflet-popup-content { font-family: "Barlow", system-ui, sans-serif; font-size: .92rem; }
 
 /* ---------- Abas (só no celular) ---------- */
@@ -306,20 +511,31 @@ button, input { font: inherit; }
   body { height: calc(100dvh - env(safe-area-inset-top, 0px)); overflow: hidden; }
 
   /* Topo compacto: título à esquerda, placa pequena à direita */
-  .topo { padding: .6rem .85rem; gap: .6rem; }
-  .marca h1 { font-size: 1.25rem; }
-  .marca p { font-size: .75rem; }
+  .topo { padding: .55rem .75rem; gap: .5rem; }
+  .marca { min-width: 0; flex: 1; }
+  .titulo-longo { display: none; }
+  .marca h1 { font-size: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .marca p { font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .placa {
+    flex: none;
     min-width: 0;
-    max-width: 48%;
+    width: 8.6rem;
     padding: .35rem .6rem .4rem;
     outline-width: 2px;
     outline-offset: 2px;
     box-shadow: 0 0 0 2px var(--cor), inset 0 0 0 2px #fff;
   }
   .placa[data-nivel="2"] { box-shadow: 0 0 0 2px var(--cor), inset 0 0 0 2px #1F2A33; }
-  .placa-nivel { font-size: 1.15rem; }
-  .placa-onde { font-size: .7rem; line-height: 1.2; }
+  .placa-nivel { font-size: 1.05rem; white-space: nowrap; }
+  .placa-onde {
+    font-size: .66rem;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .botao-topo.icone { width: 36px; min-height: 36px; }
 
   /* Uma seção por vez, escolhida pelas abas */
   .layout { display: block; position: relative; flex: 1; min-height: 0; }
@@ -332,8 +548,14 @@ button, input { font: inherit; }
   }
   body[data-aba="mapa"] .painel,
   body:not([data-aba="mapa"]) .mapa-area { visibility: hidden; pointer-events: none; }
-  body[data-aba="ruas"] #secRegioes,
-  body[data-aba="regioes"] #secRuas { display: none; }
+  body[data-aba="ruas"] .secao:not(#secRuas),
+  body[data-aba="historico"] .secao:not(#secHistorico),
+  body[data-aba="regioes"] .secao:not(#secRegioes) { display: none; }
+  .secao + .secao { margin-top: 0; }
+
+  .topo-acoes { gap: .4rem; }
+  #btnInstalar { padding: 0 .65rem; font-size: .85rem; }
+  .radar { bottom: 1.7rem; }
 
   /* Filtros viram uma folha que sobe de baixo, dentro do mapa */
   .filtros {
@@ -370,7 +592,7 @@ button, input { font: inherit; }
     border-top: 3px solid transparent;
     color: var(--texto-suave);
     font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
-    font-size: 1rem;
+    font-size: .95rem;
     font-weight: 700;
     white-space: nowrap;
     cursor: pointer;
@@ -400,4 +622,5 @@ button, input { font: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+  .marcador-cge.ativo::after, .esqueleto, .esqueleto-linha, .placa.mudou { animation: none !important; }
 }

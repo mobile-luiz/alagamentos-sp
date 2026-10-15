@@ -1,12 +1,16 @@
 {
   "name": "alagamentos-sp-servidor",
-  "version": "1.0.0",
-  "description": "Lê os pontos de alagamento do CGE e entrega em JSON",
+  "version": "2.0.0",
+  "description": "Painel de chuva e alagamentos de SP: lê o CGE, guarda histórico e envia avisos",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "chaves": "node gerar-chaves.js"
+  },
+  "engines": { "node": ">=22.13" },
   "dependencies": {
     "cheerio": "^1.0.0",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "web-push": "^3.6.7"
   }
 }

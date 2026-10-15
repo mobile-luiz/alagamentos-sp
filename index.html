@@ -4,6 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Chuva e Alagamentos SP</title>
+  <meta name="description" content="Ruas alagadas, radar de chuva e histórico de alagamentos da cidade de São Paulo.">
+
+  <!-- Aplica o tema salvo antes de desenhar a página (evita piscar) -->
+  <script>
+    try {
+      var t = localStorage.getItem("alagamentos-sp:tema");
+      if (t === "claro" || t === "escuro") document.documentElement.dataset.tema = t;
+    } catch (e) {}
+  </script>
+
+  <!-- App instalável -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1C252D" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Alagamentos SP">
+  <link rel="icon" href="icones/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
@@ -13,19 +33,25 @@
 <body data-aba="mapa">
   <header class="topo">
     <div class="marca">
-      <h1>Chuva e Alagamentos SP</h1>
-      <p id="atualizado">Carregando dados de chuva…</p>
+      <h1><span class="titulo-longo">Chuva e </span>Alagamentos SP</h1>
+      <p id="atualizado"><span class="esqueleto-linha"></span></p>
     </div>
 
-    <div class="placa" id="placa" data-nivel="0" aria-live="polite">
-      <span class="placa-nivel" id="placaNivel">—</span>
-      <span class="placa-onde" id="placaOnde">Consultando as regiões</span>
+    <div class="topo-acoes">
+      <button type="button" id="btnInstalar" class="botao-topo" hidden>Instalar app</button>
+      <button type="button" id="btnTema" class="botao-topo icone" aria-label="Tema: automático" title="Tema: automático">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+      </button>
+      <div class="placa" id="placa" data-nivel="0" aria-live="polite">
+        <span class="placa-nivel" id="placaNivel">—</span>
+        <span class="placa-onde" id="placaOnde">Consultando as regiões</span>
+      </div>
     </div>
   </header>
 
   <main class="layout">
     <section class="mapa-area">
-      <div id="mapa" aria-label="Mapa de São Paulo com chuva por região e pontos de alagamento"></div>
+      <div id="mapa" aria-label="Mapa de São Paulo com chuva, radar e ruas alagadas"></div>
 
       <div class="mapa-botoes">
         <button type="button" id="btnFiltros" class="botao-mapa" aria-expanded="false" aria-controls="painelFiltros">
@@ -49,55 +75,109 @@
         </fieldset>
         <fieldset>
           <legend>Mostrar no mapa</legend>
+          <label class="opcao-camada"><input type="checkbox" id="chkRadar" checked> Radar de chuva</label>
           <label class="opcao-camada"><input type="checkbox" id="chkCge" checked> Ruas alagadas</label>
-          <label class="opcao-camada"><input type="checkbox" id="chkHistorico" checked> Pontos que costumam alagar</label>
+          <label class="opcao-camada"><input type="checkbox" id="chkHistorico" checked> Ruas que mais alagam</label>
+          <label class="opcao-camada"><input type="checkbox" id="chkCalor"> Mapa de calor do histórico</label>
           <label class="opcao-camada"><input type="checkbox" id="chkZonas" checked> Chuva por região</label>
         </fieldset>
+      </div>
+
+      <!-- Controle do radar: play/pause e linha do tempo -->
+      <div class="radar" id="radar" hidden>
+        <button type="button" id="btnRadarPlay" class="radar-play" aria-label="Animar radar">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path id="iconeRadar" d="M8 5v14l11-7z" fill="currentColor"/></svg>
+        </button>
+        <input type="range" id="radarLinha" min="0" max="0" value="0" aria-label="Momento do radar">
+        <span class="radar-hora" id="radarHora">—</span>
       </div>
     </section>
 
     <aside class="painel">
       <section class="secao" id="secRuas">
-      <div class="painel-cabeca">
-        <h2 id="tituloCge">Ruas alagadas hoje</h2>
-      </div>
-      <div class="filtros-cge">
-        <label>Dia
-          <input type="date" id="dataCge">
-        </label>
-        <label class="chave-simples">
-          <input type="checkbox" id="chkSoAtivos">
-          Só os que ainda estão alagados
-        </label>
-      </div>
-      <p class="legenda-curta" id="statusCge">Consultando o CGE…</p>
-      <ul id="listaCge" class="registros"></ul>
+        <div class="painel-cabeca">
+          <h2 id="tituloCge">Ruas alagadas hoje</h2>
+        </div>
+        <div class="filtros-cge">
+          <label>Dia
+            <input type="date" id="dataCge">
+          </label>
+          <label class="chave-simples">
+            <input type="checkbox" id="chkSoAtivos">
+            Só as que ainda estão alagadas
+          </label>
+        </div>
+        <p class="legenda-curta" id="statusCge"><span class="esqueleto-linha"></span></p>
+        <ul id="listaCge" class="registros">
+          <li class="esqueleto"></li><li class="esqueleto"></li><li class="esqueleto"></li>
+        </ul>
+
+        <div class="avisos" id="avisos">
+          <h3>Avisos no celular</h3>
+          <p class="legenda-curta" id="avisosStatus">Receba uma notificação quando uma rua alagar, mesmo com o app fechado.</p>
+          <div class="avisos-linha">
+            <select id="avisosRaio" aria-label="Quais alagamentos avisar">
+              <option value="0">Toda a cidade</option>
+              <option value="2">Até 2 km de mim</option>
+              <option value="5">Até 5 km de mim</option>
+            </select>
+            <button type="button" id="btnAvisos" class="botao-principal">Ativar avisos</button>
+          </div>
+          <button type="button" id="btnAvisosTeste" class="link" hidden>Enviar aviso de teste</button>
+        </div>
+      </section>
+
+      <section class="secao" id="secHistorico">
+        <div class="painel-cabeca">
+          <h2>Histórico</h2>
+        </div>
+        <div class="periodo" role="group" aria-label="Período">
+          <button type="button" data-dias="30">30 dias</button>
+          <button type="button" data-dias="90" aria-pressed="true">90 dias</button>
+          <button type="button" data-dias="365">1 ano</button>
+        </div>
+        <p class="legenda-curta" id="historicoStatus"><span class="esqueleto-linha"></span></p>
+        <dl class="numeros" id="historicoNumeros"></dl>
+
+        <h3 class="subtitulo">Por mês</h3>
+        <div class="grafico" id="graficoMes"></div>
+
+        <h3 class="subtitulo">Por horário do dia</h3>
+        <div class="grafico" id="graficoHora"></div>
+
+        <h3 class="subtitulo">Ruas que mais alagam</h3>
+        <ol class="ranking" id="ranking"></ol>
       </section>
 
       <section class="secao" id="secRegioes">
-      <div class="painel-cabeca">
-        <h2>Regiões</h2>
-        <button type="button" id="btnAtualizar" class="link">Atualizar agora</button>
-      </div>
-      <p class="legenda-curta">Chuva das últimas 3 horas e previsão das próximas 3.</p>
-      <ul id="listaZonas" class="zonas"></ul>
+        <div class="painel-cabeca">
+          <h2>Regiões</h2>
+          <button type="button" id="btnAtualizar" class="link">Atualizar agora</button>
+        </div>
+        <p class="legenda-curta">Chuva das últimas 3 horas e previsão das próximas 3.</p>
+        <ul id="listaZonas" class="zonas">
+          <li class="esqueleto"></li><li class="esqueleto"></li><li class="esqueleto"></li>
+        </ul>
 
-      <div class="aviso">
-        <p>O nível de cada região é uma <strong>estimativa</strong> feita a partir da chuva medida e prevista (Open-Meteo). Os pontos de alagamento vêm do site do CGE da Prefeitura, e a posição no mapa é aproximada.</p>
-        <a href="https://www.cgesp.org/v3/alagamentos.jsp" target="_blank" rel="noopener">Abrir alagamentos no site do CGE</a>
-        <p class="emergencia">Em emergência ligue 199 (Defesa Civil) ou 193 (Bombeiros). Trânsito: 156 (CET).</p>
-      </div>
+        <div class="aviso">
+          <p>O nível de cada região é uma <strong>estimativa</strong> feita a partir da chuva medida e prevista (Open-Meteo). As ruas alagadas vêm do site do CGE da Prefeitura, e a posição no mapa é aproximada. Radar: RainViewer.</p>
+          <a href="https://www.cgesp.org/v3/alagamentos.jsp" target="_blank" rel="noopener">Abrir alagamentos no site do CGE</a>
+          <p class="emergencia">Em emergência ligue 199 (Defesa Civil) ou 193 (Bombeiros). Trânsito: 156 (CET).</p>
+        </div>
       </section>
     </aside>
   </main>
 
   <nav class="abas" aria-label="Seções">
     <button type="button" data-aba="mapa" aria-current="true">Mapa</button>
-    <button type="button" data-aba="ruas">Ruas alagadas <span class="contador" id="contadorRuas" hidden></span></button>
+    <button type="button" data-aba="ruas">Ruas <span class="contador" id="contadorRuas" hidden></span></button>
+    <button type="button" data-aba="historico">Histórico</button>
     <button type="button" data-aba="regioes">Regiões</button>
   </nav>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="config.js"></script>
   <script src="data.js"></script>
   <script src="script.js"></script>
 </body>
