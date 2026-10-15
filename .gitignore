@@ -1,0 +1,5 @@
+node_modules/
+tiles-cache/
+geocache.json
+ultima-pagina-cge.html
+package-lock.json

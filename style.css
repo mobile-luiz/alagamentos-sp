@@ -1,0 +1,403 @@
+:root {
+  --fundo: #EEF2F4;
+  --superficie: #FFFFFF;
+  --texto: #1F2A33;
+  --texto-suave: #5A6872;
+  --chuva: #2F6F8F;
+  --agua: #8FC1D4;
+  --linha: #D3DCE1;
+  --nivel: #7A8A94;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #141B21;
+    --superficie: #1C252D;
+    --texto: #E4EAEE;
+    --texto-suave: #97A5AF;
+    --chuva: #7DB6D1;
+    --agua: #3E6E85;
+    --linha: #2C3A44;
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Deixa o mapa claro do OpenStreetMap escuro, combinando com o tema */
+  .leaflet-container { background: #1C252D; }
+}
+
+*, *::before, *::after { box-sizing: inherit; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: "Barlow", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  background: var(--fundo);
+  color: var(--texto);
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, .placa-nivel {
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  margin: 0;
+}
+
+button, input { font: inherit; }
+
+:focus-visible { outline: 3px solid var(--chuva); outline-offset: 2px; }
+
+/* ---------- Topo com a placa ---------- */
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--linha);
+  background: var(--superficie);
+}
+
+.marca h1 { font-size: 1.9rem; font-weight: 800; line-height: 1.05; }
+.marca p { margin: .2rem 0 0; color: var(--texto-suave); font-size: .9rem; }
+
+/* A placa imita uma placa de trânsito: borda dupla e cor do pior nível da cidade */
+.placa {
+  --cor: var(--nivel);
+  min-width: 13rem;
+  padding: .55rem 1.1rem .65rem;
+  border-radius: 10px;
+  background: var(--cor);
+  color: #fff;
+  box-shadow: 0 0 0 3px var(--cor), inset 0 0 0 3px #fff;
+  outline: 3px solid var(--cor);
+  outline-offset: 3px;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  transition: background .4s;
+}
+.placa[data-nivel="2"] { color: #1F2A33; box-shadow: 0 0 0 3px var(--cor), inset 0 0 0 3px #1F2A33; }
+.placa-nivel { font-size: 2.1rem; font-weight: 800; line-height: 1; }
+.placa-onde { font-size: .88rem; font-weight: 600; margin-top: .2rem; }
+
+/* ---------- Layout ---------- */
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 23rem;
+}
+
+.mapa-area { position: relative; min-height: 0; }
+#mapa { position: absolute; inset: 0; }
+
+/* ---------- Botões e filtros do mapa ---------- */
+.mapa-botoes {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .5rem;
+}
+.botao-mapa {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 42px;
+  padding: 0 1rem;
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  font-weight: 600;
+  cursor: pointer;
+}
+.botao-mapa[aria-expanded="true"] { background: var(--chuva); color: var(--superficie); border-color: var(--chuva); }
+.botao-mapa.redondo { width: 42px; padding: 0; justify-content: center; }
+.marca-filtro {
+  position: absolute;
+  top: 4px; right: 6px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #E5631C;
+  border: 2px solid var(--superficie);
+}
+.marca-filtro[hidden] { display: none; }
+
+.filtros {
+  position: absolute;
+  top: 3.6rem;
+  right: .75rem;
+  z-index: 1001;
+  width: 17.5rem;
+  max-height: calc(100% - 4.5rem);
+  overflow-y: auto;
+  padding: .85rem 1rem 1rem;
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+.filtros[hidden] { display: none; }
+.filtros-topo { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .35rem; }
+.filtros-topo h3 { font-size: 1.2rem; }
+.filtros fieldset { border: 0; margin: .5rem 0 0; padding: 0; }
+.filtros legend { font-size: .82rem; color: var(--texto-suave); margin-bottom: .4rem; padding: 0; }
+.opcoes-fundo { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+.opcoes-fundo button {
+  min-height: 40px;
+  padding: .3rem .5rem;
+  background: var(--fundo);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  font-size: .85rem;
+  line-height: 1.15;
+  cursor: pointer;
+}
+.opcoes-fundo button[aria-pressed="true"] { background: var(--chuva); color: var(--superficie); border-color: var(--chuva); font-weight: 600; }
+.opcao-camada { display: flex; align-items: center; gap: .55rem; min-height: 38px; cursor: pointer; }
+.opcao-camada input { width: 18px; height: 18px; accent-color: var(--chuva); }
+
+/* ---------- Painel ---------- */
+.painel {
+  background: var(--superficie);
+  border-left: 1px solid var(--linha);
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.5rem;
+}
+
+.painel-cabeca {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: .5rem;
+}
+.painel-cabeca h2 { font-size: 1.35rem; font-weight: 700; }
+.painel-cabeca + .registros { margin-top: .5rem; }
+
+.link {
+  background: none;
+  border: 0;
+  color: var(--chuva);
+  font-weight: 600;
+  cursor: pointer;
+  padding: .2rem 0;
+}
+
+.filtros-cge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem 1rem;
+  margin: .5rem 0 .25rem;
+  font-size: .9rem;
+}
+.filtros-cge input[type="date"] {
+  margin-left: .35rem;
+  padding: .3rem .45rem;
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+  background: var(--fundo);
+  color: var(--texto);
+  font: inherit;
+}
+.chave-simples { display: flex; align-items: center; gap: .35rem; cursor: pointer; }
+.rua-titulo { font-weight: 600; }
+
+.legenda-curta { margin: .15rem 0 .75rem; color: var(--texto-suave); font-size: .88rem; }
+
+.zonas, .registros { list-style: none; margin: 0 0 1.25rem; padding: 0; }
+
+.zona {
+  display: grid;
+  grid-template-columns: 6px 1fr auto;
+  gap: .25rem .75rem;
+  padding: .6rem 0;
+  border-bottom: 1px solid var(--linha);
+  cursor: pointer;
+}
+.zona:last-child { border-bottom: 0; }
+.zona-faixa { grid-row: span 2; border-radius: 3px; background: var(--nivel); }
+.zona-nome { font-weight: 600; }
+.zona-nivel { font-weight: 600; font-size: .88rem; text-align: right; }
+.zona-numeros { grid-column: 2 / 4; color: var(--texto-suave); font-size: .85rem; }
+
+/* Mini gráfico de barras: 6 horas passadas + 6 futuras */
+.barras {
+  grid-column: 2 / 4;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 28px;
+  margin-top: .15rem;
+}
+.barras span {
+  flex: 1;
+  min-height: 2px;
+  background: var(--chuva);
+  border-radius: 2px 2px 0 0;
+}
+.barras span.futuro { background: var(--agua); }
+.barras span.agora { outline: 2px solid var(--texto); outline-offset: 1px; }
+
+.registro {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .5rem 0;
+  border-bottom: 1px solid var(--linha);
+  font-size: .92rem;
+}
+.registro small { display: block; color: var(--texto-suave); }
+.vazio { color: var(--texto-suave); font-size: .9rem; }
+
+.aviso {
+  font-size: .85rem;
+  color: var(--texto-suave);
+  border-top: 1px solid var(--linha);
+  padding-top: 1rem;
+}
+.aviso p { margin: 0 0 .6rem; }
+.aviso a { color: var(--chuva); font-weight: 600; }
+.emergencia { margin-top: .8rem !important; color: var(--texto); font-weight: 600; }
+
+/* ---------- Marcadores do mapa ---------- */
+.marcador-historico {
+  width: 14px; height: 14px;
+  background: var(--superficie);
+  border: 3px solid #E2B400;
+  transform: rotate(45deg);
+}
+.marcador-cge {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.35);
+}
+.selo {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-right: .4rem;
+}
+.registro.encerrado { opacity: .6; }
+.leaflet-popup-content { font-family: "Barlow", system-ui, sans-serif; font-size: .92rem; }
+
+/* ---------- Abas (só no celular) ---------- */
+.abas { display: none; }
+
+/* ---------- Celular ---------- */
+@media (max-width: 820px) {
+  html, body { height: 100%; }
+  body { height: calc(100dvh - env(safe-area-inset-top, 0px)); overflow: hidden; }
+
+  /* Topo compacto: título à esquerda, placa pequena à direita */
+  .topo { padding: .6rem .85rem; gap: .6rem; }
+  .marca h1 { font-size: 1.25rem; }
+  .marca p { font-size: .75rem; }
+  .placa {
+    min-width: 0;
+    max-width: 48%;
+    padding: .35rem .6rem .4rem;
+    outline-width: 2px;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--cor), inset 0 0 0 2px #fff;
+  }
+  .placa[data-nivel="2"] { box-shadow: 0 0 0 2px var(--cor), inset 0 0 0 2px #1F2A33; }
+  .placa-nivel { font-size: 1.15rem; }
+  .placa-onde { font-size: .7rem; line-height: 1.2; }
+
+  /* Uma seção por vez, escolhida pelas abas */
+  .layout { display: block; position: relative; flex: 1; min-height: 0; }
+  .mapa-area, .painel { position: absolute; inset: 0; }
+  .painel {
+    border: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: .75rem 1rem 1.5rem;
+  }
+  body[data-aba="mapa"] .painel,
+  body:not([data-aba="mapa"]) .mapa-area { visibility: hidden; pointer-events: none; }
+  body[data-aba="ruas"] #secRegioes,
+  body[data-aba="regioes"] #secRuas { display: none; }
+
+  /* Filtros viram uma folha que sobe de baixo, dentro do mapa */
+  .filtros {
+    top: auto; bottom: 0; left: 0; right: 0;
+    width: auto;
+    max-height: 75%;
+    border-radius: 16px 16px 0 0;
+    border-bottom: 0;
+    padding-bottom: 1.25rem;
+  }
+  .leaflet-control-zoom a { width: 36px !important; height: 36px !important; line-height: 36px !important; }
+  .leaflet-popup-content { margin: .7rem .85rem; max-width: 70vw; }
+
+  /* Lista: áreas de toque confortáveis */
+  .registro, .zona { padding: .75rem 0; }
+  .filtros-cge { flex-direction: column; align-items: flex-start; }
+  .filtros-cge input[type="date"] { min-height: 40px; }
+  .chave-simples input { width: 20px; height: 20px; }
+  .painel-cabeca h2 { font-size: 1.25rem; }
+
+  /* Barra de abas fixa embaixo */
+  .abas {
+    display: flex;
+    flex: none;
+    background: var(--superficie);
+    border-top: 1px solid var(--linha);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .abas button {
+    flex: 1;
+    min-height: 54px;
+    background: none;
+    border: 0;
+    border-top: 3px solid transparent;
+    color: var(--texto-suave);
+    font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .abas button[aria-current="true"] { color: var(--chuva); border-top-color: var(--chuva); }
+  .contador {
+    display: inline-block;
+    min-width: 1.3rem;
+    padding: 0 .35rem;
+    margin-left: .2rem;
+    border-radius: 999px;
+    background: #C62828;
+    color: #fff;
+    font-family: "Barlow", system-ui, sans-serif;
+    font-size: .75rem;
+    line-height: 1.3rem;
+  }
+  .contador[hidden] { display: none; }
+}
+
+/* Celular deitado: topo ainda menor para sobrar mapa */
+@media (max-width: 820px) and (max-height: 500px) {
+  .marca p { display: none; }
+  .topo { padding: .35rem .85rem; }
+  .abas button { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
